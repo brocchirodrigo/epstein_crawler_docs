@@ -93,7 +93,7 @@ class PathSettings(BaseSettings):
 
     @property
     def output_json(self) -> Path:
-        return self.project_root / "epstein_urls.json"
+        return self.downloads_dir / "epstein_urls.json"
 
 
 class RAGSettings(BaseSettings):
