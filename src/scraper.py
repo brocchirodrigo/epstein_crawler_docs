@@ -482,13 +482,13 @@ def collect_pdfs_from_dataset(page: Page, dataset_url: str) -> list[dict]:
 
             if not pdfs:
                 if page_num == 0:
-                    logger.warning("  ⚠️ No PDFs found in dataset")
+                    logger.warning("⚠️ No PDFs found in dataset")
                 else:
-                    logger.info("  ✅ No more PDFs found, moving to next dataset")
+                    logger.info("✅ No more PDFs found, moving to next dataset")
                 break
 
             all_pdfs.extend(pdfs)
-            logger.info(f"  ✅ Page {page_num + 1} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})")
+            logger.info(f"✅ Page {page_num + 1} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})")
 
             page_num += 1
 
