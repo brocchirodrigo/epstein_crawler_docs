@@ -307,6 +307,10 @@ git tag v1.0.6
 git push origin v1.0.6
 ```
 
+## Legal Notice
+
+[Legal Notice](https://github.com/brocchirodrigo/epstein_crawler_docs/blob/main/LEGAL_NOTICE)
+
 ## License
 
 MIT
