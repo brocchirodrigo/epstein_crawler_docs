@@ -27,7 +27,7 @@ class ScraperSettings(BaseSettings):
     max_pages_per_letter: int | None = Field(default=None)
     max_downloads: int | None = Field(default=None)
 
-    headless: bool = Field(default=False)
+    headless: bool = False
     viewport_width: int = Field(default=1920)
     viewport_height: int = Field(default=1080)
     user_agent: str = Field(

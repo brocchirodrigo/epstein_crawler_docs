@@ -11,7 +11,5 @@ services:
       - ./epstein_urls.json:/app/epstein_urls.json
     env_file:
       - .env
-    environment:
-      - HEADLESS=false
     shm_size: 2gb
     restart: "no"

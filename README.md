@@ -23,11 +23,12 @@ eua_gov/
 │   ├── scraper.py          # Web scraping logic
 │   └── downloader.py       # PDF download logic
 ├── downloads/              # Downloaded PDF files
-├── logs/                   # Error log files
+├── logs/                   # Log files
 ├── main.py                 # Entry point
 ├── .env                    # Environment configuration
 ├── Dockerfile              # Docker image
 ├── docker-compose.yml      # Docker Compose
+├── docker-entrypoint.sh    # Docker entrypoint with Xvfb
 ├── epstein_urls.json       # Collected URLs
 ├── pyproject.toml          # Dependencies
 └── README.md
@@ -59,11 +60,12 @@ Create a `.env` file in the project root:
 | `ALPHABET` | string | `abcdefghijklmnopqrstuvwxyz` | Letters to search (e.g., `abc` for only A, B, C) |
 | `MAX_PAGES_PER_LETTER` | int | `None` (unlimited) | Max result pages per letter |
 | `MAX_DOWNLOADS` | int | `None` (unlimited) | Max files to download |
-| `HEADLESS` | bool | `false` | Run browser without GUI |
 | `BASE_URL` | string | `https://www.justice.gov` | Base URL for scraping |
 | `NAVIGATION_TIMEOUT` | int | `60000` | Navigation timeout in ms |
 | `VIEWPORT_WIDTH` | int | `1920` | Browser viewport width |
 | `VIEWPORT_HEIGHT` | int | `1080` | Browser viewport height |
+
+> **Note**: The browser always runs in GUI mode (headless=false) because the site blocks headless browsers.
 
 ### Example `.env` for testing
 
@@ -71,14 +73,12 @@ Create a `.env` file in the project root:
 ALPHABET=abc
 MAX_PAGES_PER_LETTER=2
 MAX_DOWNLOADS=10
-HEADLESS=false
 ```
 
 ### Example `.env` for full scrape
 
 ```env
-HEADLESS=true
-# Leave others empty for unlimited
+# Leave empty for unlimited - all letters, all pages, all downloads
 ```
 
 ## Usage
@@ -91,22 +91,26 @@ uv run main.py
 
 ### Docker
 
+Docker uses Xvfb (virtual display) to run the browser in GUI mode without requiring a real display.
+
 ```bash
 # Build and run
-docker-compose up --build
+docker compose up --build
 
 # Run in background
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## Output
 
 - **epstein_urls.json**: JSON file with all collected PDF URLs
 - **downloads/**: Directory containing downloaded PDF files
-- **logs/**: Error logs (errors_YYYY-MM-DD.log)
+- **logs/**: Log files
+  - `scraper_YYYY-MM-DD.log` - Warnings and errors
+  - `errors_YYYY-MM-DD.log` - Critical errors only
 
 ## How It Works
 
