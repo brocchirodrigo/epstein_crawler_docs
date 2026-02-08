@@ -141,6 +141,32 @@ This method handles all dependencies, including the browser and virtual display 
 - `loguru` - Logging
 - `pydantic-settings` - Configuration management
 
+## 📦 Release
+
+Images are automatically built and published to **Docker Hub** (`rodrigobrocchi/epstein_crawler_docs`) when a new tag is pushed.
+
+### Prerequisites
+
+You must configure the following **Repository Secrets** in GitHub:
+
+- `DOCKERHUB_USERNAME`: Your Docker Hub username
+- `DOCKERHUB_TOKEN`: An Access Token from Docker Hub
+
+### How to Release
+
+1. Update version in `pyproject.toml`
+
+2. Tag the commit:
+
+    ```bash
+    git tag v1.0.1
+    git push origin v1.0.1
+    ```
+
+3. The workflow will build and push:
+    - `rodrigobrocchi/epstein_crawler_docs:latest`
+    - `rodrigobrocchi/epstein_crawler_docs:1.0.1`
+
 ## License
 
 MIT
