@@ -217,7 +217,6 @@ def get_total_pages(page: Page, max_pages: int = None) -> int:
                 return max_pages if max_pages else 1
 
         if NO_RESULTS_TEXT in content:
-            logger.warning("No results found for this search")
             return 0
 
         logger.warning("Could not find pagination label, assuming 1 page")
