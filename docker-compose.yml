@@ -1,15 +1,28 @@
 services:
-  scraper:
+  scraper-scan:
     build:
       context: .
       dockerfile: Dockerfile
-    image: epstein-scraper:latest
-    container_name: epstein-scraper
+    container_name: epstein_scraper_scan
     volumes:
       - ./downloads:/app/downloads
       - ./logs:/app/logs
       - ./epstein_urls.json:/app/epstein_urls.json
-    env_file:
-      - .env
+
     shm_size: 2gb
     restart: "no"
+
+  scraper-search:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: epstein_scraper_search
+    command: ["--search"]
+    volumes:
+      - ./downloads:/app/downloads
+      - ./logs:/app/logs
+      - ./epstein_urls.json:/app/epstein_urls.json
+
+    shm_size: 2gb
+    restart: "no"
+    profiles: ["search", "all"]

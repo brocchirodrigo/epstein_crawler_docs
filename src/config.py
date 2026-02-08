@@ -23,6 +23,7 @@ class ScraperSettings(BaseSettings):
 
     base_url: str = Field(default="https://www.justice.gov")
     epstein_path: str = Field(default="/epstein")
+    disclosures_path: str = Field(default="/epstein/doj-disclosures")
 
     alphabet: str = Field(default="abcdefghijklmnopqrstuvwxyz")
     max_pages_per_letter: int | None = Field(default=None)

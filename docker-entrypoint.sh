@@ -5,4 +5,4 @@ export DISPLAY=:99
 
 sleep 2
 
-exec uv run main.py
+exec uv run main.py "$@"
