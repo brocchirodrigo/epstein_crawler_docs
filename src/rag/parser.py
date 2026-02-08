@@ -94,7 +94,9 @@ def parse_pdf(pdf_path: Path) -> str:
 
     max_pages = rag_settings.max_pages_per_pdf
     if max_pages > 0 and len(images) > max_pages:
-        logger.warning(f"{pdf_path.name} has {len(images)} pages, limiting to {max_pages}")
+        logger.warning(
+            f"{pdf_path.name} has {len(images)} pages, limiting to {max_pages}"
+        )
         images = images[:max_pages]
 
     logger.info(f"Processing {len(images)} pages...")
@@ -113,7 +115,9 @@ def parse_pdf(pdf_path: Path) -> str:
             all_text.append(f"--- Page {i} ---\n[Error extracting text: {e}]")
 
     full_text = "\n\n".join(all_text)
-    logger.info(f"Parsed {pdf_path.name}: {len(full_text)} characters from {len(images)} pages")
+    logger.info(
+        f"Parsed {pdf_path.name}: {len(full_text)} characters from {len(images)} pages"
+    )
 
     return full_text
 

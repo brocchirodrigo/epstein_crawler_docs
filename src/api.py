@@ -61,24 +61,24 @@ background_tasks = set()
 def run_sync_task(force: bool = False):
     """Run sync in background."""
     global sync_state
-    
+
     def update_progress(progress: dict):
         sync_state["progress"] = progress
-    
+
     sync_state["running"] = True
     sync_state["started_at"] = datetime.now().isoformat()
     sync_state["completed_at"] = None
     sync_state["progress"] = {"status": "starting", "current_file": None}
     sync_state["result"] = None
     sync_state["error"] = None
-    
+
     try:
         logger.info("🔄 Background sync started...")
         result = sync_documents(force=force, progress_callback=update_progress)
-        
+
         sync_state["result"] = result
         sync_state["completed_at"] = datetime.now().isoformat()
-        
+
         logger.info("=" * 60)
         logger.info("✅ SYNC COMPLETE!")
         logger.info(f"   New files: {result.get('new_files', 0)}")
@@ -88,12 +88,12 @@ def run_sync_task(force: bool = False):
         if result.get("errors"):
             logger.warning(f"   Errors: {len(result['errors'])}")
         logger.info("=" * 60)
-        
+
     except Exception as e:
         sync_state["error"] = str(e)
         sync_state["completed_at"] = datetime.now().isoformat()
         logger.error(f"❌ SYNC FAILED: {e}")
-        
+
     finally:
         sync_state["running"] = False
         sync_state["progress"] = None
@@ -117,7 +117,9 @@ async def lifespan(app: FastAPI):
             background_tasks.add(task)
             task.add_done_callback(background_tasks.discard)
         else:
-            logger.info(f"✅ Index is up-to-date: {stats['indexed_files']} files indexed.")
+            logger.info(
+                f"✅ Index is up-to-date: {stats['indexed_files']} files indexed."
+            )
     except Exception as e:
         logger.warning(f"Could not check index on startup: {e}")
         logger.info("Starting background sync anyway...")
@@ -174,13 +176,13 @@ async def trigger_sync(force: bool = False):
     if sync_state["running"]:
         raise HTTPException(
             status_code=409,
-            detail="Sync already in progress. Check GET /sync/status for progress."
+            detail="Sync already in progress. Check GET /sync/status for progress.",
         )
-    
+
     task = asyncio.create_task(asyncio.to_thread(run_sync_task, force))
     background_tasks.add(task)
     task.add_done_callback(background_tasks.discard)
-    
+
     return {
         "message": "Sync started in background",
         "status_url": "/sync/status",

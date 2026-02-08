@@ -84,14 +84,19 @@ def sync_documents(
     Returns:
         Summary of sync operation.
     """
-    def report_progress(status: str, current_file: str = None, processed: int = 0, total: int = 0):
+
+    def report_progress(
+        status: str, current_file: str = None, processed: int = 0, total: int = 0
+    ):
         if progress_callback:
-            progress_callback({
-                "status": status,
-                "current_file": current_file,
-                "processed": processed,
-                "total": total,
-            })
+            progress_callback(
+                {
+                    "status": status,
+                    "current_file": current_file,
+                    "processed": processed,
+                    "total": total,
+                }
+            )
 
     store = VectorStore()
     index = _load_index()

@@ -50,7 +50,9 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
             batch_embeddings = [item.embedding for item in response.data]
             all_embeddings.extend(batch_embeddings)
 
-            logger.info(f"Embedded batch {i // batch_size + 1}/{(len(texts) - 1) // batch_size + 1}")
+            logger.info(
+                f"Embedded batch {i // batch_size + 1}/{(len(texts) - 1) // batch_size + 1}"
+            )
 
     return all_embeddings
 

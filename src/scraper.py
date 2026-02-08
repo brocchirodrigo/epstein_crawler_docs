@@ -426,7 +426,9 @@ def get_dataset_links(page: Page) -> list[str]:
     return links
 
 
-def _extract_pdfs_from_dataset_page(soup: BeautifulSoup, dataset_url: str) -> list[dict]:
+def _extract_pdfs_from_dataset_page(
+    soup: BeautifulSoup, dataset_url: str
+) -> list[dict]:
     """
     Extracts PDF links from a dataset page soup.
     Returns list of PDF info dicts.
@@ -442,11 +444,7 @@ def _extract_pdfs_from_dataset_page(soup: BeautifulSoup, dataset_url: str) -> li
         full_url = urljoin(settings.base_url, href)
         filename = link.get_text(strip=True) or Path(href).name
 
-        pdfs.append({
-            "url": full_url,
-            "filename": filename,
-            "dataset": dataset_name
-        })
+        pdfs.append({"url": full_url, "filename": filename, "dataset": dataset_name})
 
     return pdfs
 
@@ -463,7 +461,7 @@ def collect_pdfs_from_dataset(
     page: Page,
     dataset_url: str,
     on_page_complete: callable = None,
-    existing_urls: set = None
+    existing_urls: set = None,
 ) -> list[dict]:
     """
     Navigates to a dataset page, handles age gates, and extracts PDF links.
@@ -490,7 +488,11 @@ def collect_pdfs_from_dataset(
             current_url = f"{base_url}?page={page_num}"
             logger.info(f"  📄 Page {page_num + 1} - Loading {current_url}...")
 
-            page.goto(current_url, wait_until="networkidle", timeout=settings.navigation_timeout)
+            page.goto(
+                current_url,
+                wait_until="networkidle",
+                timeout=settings.navigation_timeout,
+            )
 
             if page_num == 0:
                 pass_gates(page)
@@ -506,7 +508,9 @@ def collect_pdfs_from_dataset(
                 break
 
             all_pdfs.extend(pdfs)
-            logger.info(f"✅ Page {page_num + 1} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})")
+            logger.info(
+                f"✅ Page {page_num + 1} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})"
+            )
 
             if on_page_complete:
                 on_page_complete(all_pdfs)
@@ -520,4 +524,3 @@ def collect_pdfs_from_dataset(
 
     logger.info(f"  📊 Total: {len(all_pdfs)} PDFs collected from dataset")
     return all_pdfs
-
