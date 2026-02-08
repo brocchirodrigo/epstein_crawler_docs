@@ -1,0 +1,80 @@
+### Epstein Files RAG API - HTTP Client Tests
+### Use with VS Code REST Client, IntelliJ HTTP Client, etc.
+
+@baseUrl = http://localhost:8000
+
+
+### ============================================================
+### Health Check
+### ============================================================
+
+GET {{baseUrl}}/health
+
+
+### ============================================================
+### Get Index Statistics
+### ============================================================
+
+GET {{baseUrl}}/stats
+
+
+### ============================================================
+### Document Sync (Background)
+### ============================================================
+
+# Start sync in background (returns immediately)
+POST {{baseUrl}}/sync
+
+###
+
+# Force re-index all files (background)
+POST {{baseUrl}}/sync?force=true
+
+###
+
+# Check sync status and progress
+GET {{baseUrl}}/sync/status
+
+
+### ============================================================
+### Ask Questions
+### ============================================================
+
+# Basic question
+POST {{baseUrl}}/ask
+Content-Type: application/json
+
+{
+    "question": "Who are the main people mentioned in the documents?"
+}
+
+###
+
+# Question with more results
+POST {{baseUrl}}/ask
+Content-Type: application/json
+
+{
+    "question": "What flights are documented?",
+    "top_k": 10
+}
+
+###
+
+# Question about specific people
+POST {{baseUrl}}/ask
+Content-Type: application/json
+
+{
+    "question": "Who are the main people mentioned in the documents?"
+}
+
+###
+
+# Question about dates
+POST {{baseUrl}}/ask
+Content-Type: application/json
+
+{
+    "question": "What dates appear in the flight logs?"
+}

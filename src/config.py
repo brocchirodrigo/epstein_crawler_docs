@@ -96,5 +96,29 @@ class PathSettings(BaseSettings):
         return self.project_root / "epstein_urls.json"
 
 
+class RAGSettings(BaseSettings):
+    """Configuration for RAG API."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    openai_api_key: str | None = Field(default=None)
+    openai_base_url: str | None = Field(default=None)
+    openai_embedding_model: str = Field(default="text-embedding-3-small")
+    openai_embedding_dimension: int = Field(default=1536)
+    openai_chat_model: str = Field(default="gpt-5-mini")
+    openai_vision_model: str | None = Field(default="gpt-4o-mini")
+    max_pages_per_pdf: int = Field(default=0)
+    qdrant_host: str = Field(default="localhost")
+    qdrant_port: int = Field(default=6333)
+    api_port: int = Field(default=8000)
+    api_cors_origins: str = Field(default="*")
+
+
 settings = ScraperSettings()
 paths = PathSettings()
+rag_settings = RAGSettings()
