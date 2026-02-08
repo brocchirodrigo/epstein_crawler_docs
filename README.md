@@ -89,20 +89,33 @@ MAX_DOWNLOADS=10
 uv run main.py
 ```
 
-### Docker
+### 🐳 Running with Docker Compose (Recommended)
 
-Docker uses Xvfb (virtual display) to run the browser in GUI mode without requiring a real display.
+This method handles all dependencies, including the browser and virtual display (Xvfb), automatically.
 
-```bash
-# Build and run
-docker compose up --build
+1. **Build and Start**:
 
-# Run in background
-docker compose up -d
+    ```bash
+    docker compose up --build
+    ```
 
-# View logs
-docker compose logs -f
-```
+2. **Run in Background (Detached)**:
+
+    ```bash
+    docker compose up -d
+    ```
+
+3. **View Logs**:
+
+    ```bash
+    docker compose logs -f
+    ```
+
+4. **Stop**:
+
+    ```bash
+    docker compose down
+    ```
 
 ## Output
 
