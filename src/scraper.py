@@ -426,38 +426,74 @@ def get_dataset_links(page: Page) -> list[str]:
     return links
 
 
+def _extract_pdfs_from_dataset_page(soup: BeautifulSoup, dataset_url: str) -> list[dict]:
+    """
+    Extracts PDF links from a dataset page soup.
+    Returns list of PDF info dicts.
+    """
+    pdfs = []
+    pdf_links = soup.find_all("a", href=lambda x: x and str(x).lower().endswith(".pdf"))
+
+    base_url = dataset_url.split("?")[0]
+    dataset_name = base_url.split("/")[-1].replace("-", " ").title()
+
+    for link in pdf_links:
+        href = link.get("href", "")
+        full_url = urljoin(settings.base_url, href)
+        filename = link.get_text(strip=True) or Path(href).name
+
+        pdfs.append({
+            "url": full_url,
+            "filename": filename,
+            "dataset": dataset_name
+        })
+
+    return pdfs
+
+
 def collect_pdfs_from_dataset(page: Page, dataset_url: str) -> list[dict]:
     """
     Navigates to a dataset page, handles age gates, and extracts PDF links.
+    Iterates through pages incrementally until no more PDFs are found.
     Returns list of PDF info dicts.
     """
     logger.info(f"📂 Processing dataset: {dataset_url}")
     all_pdfs = []
+    base_url = dataset_url.split("?")[0]
+    page_num = 0
 
     try:
-        page.goto(dataset_url, wait_until="networkidle", timeout=settings.navigation_timeout)
-        pass_gates(page)
+        while True:
+            current_url = f"{base_url}?page={page_num}"
 
-        content = page.content()
-        soup = BeautifulSoup(content, HTML_PARSER)
-        pdf_links = soup.find_all("a", href=lambda x: x and str(x).lower().endswith(".pdf"))
+            logger.info(f"  📄 Page {page_num + 1} - Loading {current_url}...")
 
-        for link in pdf_links:
-            href = link.get("href", "")
-            full_url = urljoin(settings.base_url, href)
-            filename = link.get_text(strip=True) or Path(href).name
+            page.goto(current_url, wait_until="networkidle", timeout=settings.navigation_timeout)
 
-            dataset_name = dataset_url.split("/")[-1].replace("-", " ").title()
+            if page_num == 0:
+                pass_gates(page)
 
-            all_pdfs.append({
-                "url": full_url,
-                "filename": filename,
-                "dataset": dataset_name
-            })
+            time.sleep(2)
 
-        logger.info(f"  ✅ Found {len(all_pdfs)} PDFs in dataset")
+            content = page.content()
+            soup = BeautifulSoup(content, HTML_PARSER)
+
+            pdfs = _extract_pdfs_from_dataset_page(soup, dataset_url)
+
+            if not pdfs:
+                if page_num == 0:
+                    logger.warning("  ⚠️ No PDFs found in dataset")
+                else:
+                    logger.info("  ✅ No more PDFs found, moving to next dataset")
+                break
+
+            all_pdfs.extend(pdfs)
+            logger.info(f"  ✅ Page {page_num + 1} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})")
+
+            page_num += 1
 
     except Exception as e:
         logger.error(f"Failed to process dataset {dataset_url}: {e}")
 
+    logger.info(f"  📊 Total: {len(all_pdfs)} PDFs collected from dataset")
     return all_pdfs
