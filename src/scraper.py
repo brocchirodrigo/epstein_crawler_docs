@@ -451,12 +451,35 @@ def _extract_pdfs_from_dataset_page(soup: BeautifulSoup, dataset_url: str) -> li
     return pdfs
 
 
-def collect_pdfs_from_dataset(page: Page, dataset_url: str) -> list[dict]:
+def _log_no_pdfs_message(page_num: int) -> None:
+    """Log appropriate message when no PDFs are found."""
+    if page_num == 0:
+        logger.warning("⚠️ No PDFs found in dataset")
+    else:
+        logger.info("✅ No more PDFs found, moving to next dataset")
+
+
+def collect_pdfs_from_dataset(
+    page: Page,
+    dataset_url: str,
+    on_page_complete: callable = None,
+    existing_urls: set = None
+) -> list[dict]:
     """
     Navigates to a dataset page, handles age gates, and extracts PDF links.
     Iterates through pages incrementally until no more PDFs are found.
+
+    Args:
+        page: Playwright page object
+        dataset_url: URL of the dataset to scrape
+        on_page_complete: Optional callback(pdfs_list) called after each page
+        existing_urls: Optional set of already collected URLs to skip
+
     Returns list of PDF info dicts.
     """
+    if existing_urls is None:
+        existing_urls = set()
+
     logger.info(f"📂 Processing dataset: {dataset_url}")
     all_pdfs = []
     base_url = dataset_url.split("?")[0]
@@ -465,7 +488,6 @@ def collect_pdfs_from_dataset(page: Page, dataset_url: str) -> list[dict]:
     try:
         while True:
             current_url = f"{base_url}?page={page_num}"
-
             logger.info(f"  📄 Page {page_num + 1} - Loading {current_url}...")
 
             page.goto(current_url, wait_until="networkidle", timeout=settings.navigation_timeout)
@@ -477,23 +499,25 @@ def collect_pdfs_from_dataset(page: Page, dataset_url: str) -> list[dict]:
 
             content = page.content()
             soup = BeautifulSoup(content, HTML_PARSER)
-
             pdfs = _extract_pdfs_from_dataset_page(soup, dataset_url)
 
             if not pdfs:
-                if page_num == 0:
-                    logger.warning("⚠️ No PDFs found in dataset")
-                else:
-                    logger.info("✅ No more PDFs found, moving to next dataset")
+                _log_no_pdfs_message(page_num)
                 break
 
             all_pdfs.extend(pdfs)
             logger.info(f"✅ Page {page_num + 1} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})")
 
+            if on_page_complete:
+                on_page_complete(all_pdfs)
+
             page_num += 1
 
     except Exception as e:
         logger.error(f"Failed to process dataset {dataset_url}: {e}")
+        if on_page_complete and all_pdfs:
+            on_page_complete(all_pdfs)
 
     logger.info(f"  📊 Total: {len(all_pdfs)} PDFs collected from dataset")
     return all_pdfs
+

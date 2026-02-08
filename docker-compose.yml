@@ -7,7 +7,6 @@ services:
     volumes:
       - ./downloads:/app/downloads
       - ./logs:/app/logs
-      - ./epstein_urls.json:/app/epstein_urls.json
     shm_size: 2gb
     restart: "no"
     user: root
@@ -22,8 +21,6 @@ services:
     volumes:
       - ./downloads:/app/downloads
       - ./logs:/app/logs
-      - ./epstein_urls.json:/app/epstein_urls.json
-
     shm_size: 2gb
     restart: "no"
     user: root
