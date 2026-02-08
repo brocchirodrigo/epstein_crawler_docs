@@ -1,0 +1,17 @@
+services:
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: epstein-scraper:latest
+    container_name: epstein-scraper
+    volumes:
+      - ./downloads:/app/downloads
+      - ./logs:/app/logs
+      - ./epstein_urls.json:/app/epstein_urls.json
+    env_file:
+      - .env
+    environment:
+      - HEADLESS=false
+    shm_size: 2gb
+    restart: "no"
