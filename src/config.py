@@ -107,7 +107,7 @@ class RAGSettings(BaseSettings):
     )
 
     openai_api_key: str | None = Field(default=None)
-    openai_base_url: str | None = Field(default=None)
+    openai_base_url: str | None = Field(default="https://api.openai.com/v1")
     openai_embedding_model: str = Field(default="text-embedding-3-small")
     openai_embedding_dimension: int = Field(default=1536)
     openai_chat_model: str = Field(default="gpt-5-mini")

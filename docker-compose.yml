@@ -47,14 +47,8 @@ services:
       - "${API_PORT:-8000}:8000"
     volumes:
       - ./downloads:/app/downloads
+    env_file: .env
     environment:
-      - OPENAI_API_KEY
-      - OPENAI_BASE_URL
-      - OPENAI_EMBEDDING_MODEL
-      - OPENAI_EMBEDDING_DIMENSION
-      - OPENAI_CHAT_MODEL
-      - OPENAI_VISION_MODEL
-      - MAX_PAGES_PER_PDF
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
     shm_size: 4gb
