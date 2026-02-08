@@ -19,6 +19,15 @@ logger.add(
 )
 
 logger.add(
+    paths.logs_dir / "scraper_{time:YYYY-MM-DD}.log",
+    level="WARNING",
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}",
+    rotation="10 MB",
+    retention="30 days",
+    compression="zip",
+)
+
+logger.add(
     paths.logs_dir / "errors_{time:YYYY-MM-DD}.log",
     level="ERROR",
     format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}",

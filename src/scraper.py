@@ -35,13 +35,10 @@ def create_browser_context(playwright) -> tuple:
 
     page = context.new_page()
 
-    # Comprehensive stealth patches
     page.add_init_script("""
-        // Hide webdriver
         Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
         delete navigator.__proto__.webdriver;
 
-        // Fake plugins
         Object.defineProperty(navigator, 'plugins', {
             get: () => {
                 const plugins = [
@@ -56,10 +53,8 @@ def create_browser_context(playwright) -> tuple:
             }
         });
 
-        // Fake languages
         Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
 
-        // Fake Chrome runtime
         window.chrome = {
             runtime: {},
             loadTimes: function() {},
@@ -67,7 +62,6 @@ def create_browser_context(playwright) -> tuple:
             app: {}
         };
 
-        // Fake permissions query
         const originalQuery = window.navigator.permissions.query;
         window.navigator.permissions.query = (parameters) => (
             parameters.name === 'notifications' ?
@@ -75,7 +69,6 @@ def create_browser_context(playwright) -> tuple:
                 originalQuery(parameters)
         );
 
-        // Fake WebGL vendor/renderer
         const getParameter = WebGLRenderingContext.prototype.getParameter;
         WebGLRenderingContext.prototype.getParameter = function(parameter) {
             if (parameter === 37445) return 'Intel Inc.';
@@ -83,7 +76,6 @@ def create_browser_context(playwright) -> tuple:
             return getParameter.apply(this, arguments);
         };
 
-        // Fake connection rtt
         if (navigator.connection) {
             Object.defineProperty(navigator.connection, 'rtt', {get: () => 50});
         }
@@ -148,24 +140,20 @@ def _wait_for_results(page: Page, max_wait: int = 60) -> bool:
         waited += 5
         content = page.content()
 
-        # Check for loading indicator - must be display:block not display:none
         loading_visible = 'id="loadingMessage" style="display: block' in content
 
         if loading_visible:
             logger.info(f"  Still loading... ({waited}s)")
             continue
 
-        # Check for results
         if "Showing" in content and "Results" in content:
             logger.info(f"✅ Results loaded after {waited}s")
             return True
 
-        # Check if actual PDF links exist
         if _check_results_loaded(content):
             logger.info(f"✅ Results loaded after {waited}s (found PDFs)")
             return True
 
-        # "No results" after waiting enough
         if waited >= 15 and "different search" in content.lower():
             logger.warning("No results found for this search")
             return True
@@ -185,7 +173,6 @@ def search_letter(page: Page, letter: str) -> bool:
         page.evaluate("window.scrollTo(0, 500)")
         time.sleep(2)
 
-        # Use native Playwright methods for better headless compatibility
         search_input = page.locator("#searchInput")
         search_button = page.locator("#searchButton")
 
@@ -193,12 +180,10 @@ def search_letter(page: Page, letter: str) -> bool:
             logger.error("Search input not found on page")
             return False
 
-        # Clear and type using native methods
         search_input.fill("")
         search_input.fill(letter)
         time.sleep(0.5)
 
-        # Click search button
         search_button.click()
 
         logger.info("⏳ Waiting for results to load (this may take 20-30 seconds)...")
