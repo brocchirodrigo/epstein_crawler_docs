@@ -16,7 +16,12 @@ from .scraper import (
     get_dataset_links,
     collect_pdfs_from_dataset,
 )
-from .downloader import download_all_pdfs, download_batch, load_downloaded_urls, load_failed_urls
+from .downloader import (
+    download_all_pdfs,
+    download_batch,
+    load_downloaded_urls,
+    load_failed_urls,
+)
 
 
 def run_scraper(
@@ -192,8 +197,15 @@ def _load_existing_progress() -> tuple[list, set]:
     return all_pdfs, existing_urls
 
 
-def _process_dataset(page, link: str, i: int, total: int, all_pdfs: list,
-                     existing_urls: set, save_progress: callable) -> list:
+def _process_dataset(
+    page,
+    link: str,
+    i: int,
+    total: int,
+    all_pdfs: list,
+    existing_urls: set,
+    save_progress: callable,
+) -> list:
     """Process a single dataset and return new PDFs."""
     pdfs = collect_pdfs_from_dataset(page, link, save_progress, existing_urls)
 
@@ -205,7 +217,9 @@ def _process_dataset(page, link: str, i: int, total: int, all_pdfs: list,
 
     unique_pdfs = list({pdf["url"]: pdf for pdf in all_pdfs}.values())
     _save_json(unique_pdfs, ["SCAN_MODE"], 0)
-    logger.info(f"💾 Dataset complete: {len(unique_pdfs)} unique PDFs ({i + 1}/{total} datasets)")
+    logger.info(
+        f"💾 Dataset complete: {len(unique_pdfs)} unique PDFs ({i + 1}/{total} datasets)"
+    )
 
     return unique_pdfs
 
@@ -229,8 +243,7 @@ def _process_all_datasets(page, all_pdfs, existing_urls, save_progress):
 
     for i, link in enumerate(dataset_links):
         unique_pdfs = _process_dataset(
-            page, link, i, len(dataset_links),
-            all_pdfs, existing_urls, save_progress
+            page, link, i, len(dataset_links), all_pdfs, existing_urls, save_progress
         )
 
     return unique_pdfs

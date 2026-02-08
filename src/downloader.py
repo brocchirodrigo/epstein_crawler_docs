@@ -64,8 +64,13 @@ def mark_as_failed(url: str) -> None:
         logger.warning(f"Could not write to failed_downloads.txt: {e}")
 
 
-def download_pdf(context: BrowserContext, url: str, filename: str,
-                 downloaded_urls: set = None, failed_urls: set = None) -> str | None:
+def download_pdf(
+    context: BrowserContext,
+    url: str,
+    filename: str,
+    downloaded_urls: set = None,
+    failed_urls: set = None,
+) -> str | None:
     """
     Downloads a single PDF using the Playwright context session.
     Validates response is actually a PDF before saving.
@@ -121,8 +126,9 @@ def download_pdf(context: BrowserContext, url: str, filename: str,
         return None
 
 
-def download_batch(context: BrowserContext, files: list, downloaded_urls: set,
-                   failed_urls: set = None) -> int:
+def download_batch(
+    context: BrowserContext, files: list, downloaded_urls: set, failed_urls: set = None
+) -> int:
     """
     Download a batch of PDFs incrementally.
     Skips files already in downloaded_urls or failed_urls.
@@ -130,9 +136,11 @@ def download_batch(context: BrowserContext, files: list, downloaded_urls: set,
     """
     if failed_urls is None:
         failed_urls = load_failed_urls()
-    to_download = [f for f in files
-                   if f["url"] not in downloaded_urls
-                   and f["url"] not in failed_urls]
+    to_download = [
+        f
+        for f in files
+        if f["url"] not in downloaded_urls and f["url"] not in failed_urls
+    ]
     if not to_download:
         return 0
 
@@ -167,9 +175,11 @@ def download_all_pdfs(
     if max_downloads:
         files = files[:max_downloads]
 
-    files_to_download = [f for f in files
-                         if f["url"] not in downloaded_urls
-                         and f["url"] not in failed_urls]
+    files_to_download = [
+        f
+        for f in files
+        if f["url"] not in downloaded_urls and f["url"] not in failed_urls
+    ]
     skipped = len(files) - len(files_to_download)
 
     total = len(files_to_download)

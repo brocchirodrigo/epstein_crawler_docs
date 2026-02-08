@@ -9,9 +9,11 @@ from httpx import AsyncClient, ASGITransport
 def mock_vector_store():
     """Create a mock vector store."""
     store = MagicMock()
-    store.search = AsyncMock(return_value=[
-        {"filename": "doc1.pdf", "page": 1, "text": "Sample text", "score": 0.9}
-    ])
+    store.search = AsyncMock(
+        return_value=[
+            {"filename": "doc1.pdf", "page": 1, "text": "Sample text", "score": 0.9}
+        ]
+    )
     return store
 
 
@@ -48,13 +50,12 @@ class TestGetStats:
         from src.api import app
 
         with patch("src.api.get_index_stats") as mock_stats:
-            mock_stats.return_value = {
-                "total_documents": 100,
-                "total_chunks": 500
-            }
+            mock_stats.return_value = {"total_documents": 100, "total_chunks": 500}
 
             transport = ASGITransport(app=app)
-            async with AsyncClient(transport=transport, base_url="http://test") as client:
+            async with AsyncClient(
+                transport=transport, base_url="http://test"
+            ) as client:
                 response = await client.get("/stats")
 
             assert response.status_code == 200
@@ -125,15 +126,18 @@ class TestAskEndpoint:
                 with patch("src.api.get_llm_client") as mock_llm:
                     mock_client = MagicMock()
                     mock_response = MagicMock()
-                    mock_response.choices = [MagicMock(message=MagicMock(content="Answer"))]
+                    mock_response.choices = [
+                        MagicMock(message=MagicMock(content="Answer"))
+                    ]
                     mock_client.chat.completions.create.return_value = mock_response
                     mock_llm.return_value = mock_client
 
                     transport = ASGITransport(app=app)
-                    async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    async with AsyncClient(
+                        transport=transport, base_url="http://test"
+                    ) as client:
                         response = await client.post(
-                            "/ask",
-                            json={"question": "What is this about?"}
+                            "/ask", json={"question": "What is this about?"}
                         )
 
                     # May fail if Qdrant not available, but structure is tested
@@ -151,8 +155,7 @@ class TestCORSMiddleware:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.options(
-                "/health",
-                headers={"Origin": "http://localhost:3000"}
+                "/health", headers={"Origin": "http://localhost:3000"}
             )
 
         # CORS preflight should be handled

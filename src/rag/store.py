@@ -54,7 +54,9 @@ class VectorStore:
                 self.client.delete_collection(COLLECTION_NAME)
                 collection_names.remove(COLLECTION_NAME)
             else:
-                logger.info(f"Collection {COLLECTION_NAME} exists with correct dimension ({current_dim}).")
+                logger.info(
+                    f"Collection {COLLECTION_NAME} exists with correct dimension ({current_dim})."
+                )
 
         if COLLECTION_NAME not in collection_names:
             logger.info(
@@ -108,7 +110,9 @@ class VectorStore:
         logger.info(f"Upserted {len(points)} chunks from {filename}")
         return len(points)
 
-    def search(self, query_embedding: list[float], top_k: int = 5) -> list[SearchResult]:
+    def search(
+        self, query_embedding: list[float], top_k: int = 5
+    ) -> list[SearchResult]:
         """
         Search for similar vectors.
 
@@ -141,9 +145,7 @@ class VectorStore:
         self.client.delete(
             collection_name=COLLECTION_NAME,
             points_selector={
-                "filter": {
-                    "must": [{"key": "filename", "match": {"value": filename}}]
-                }
+                "filter": {"must": [{"key": "filename", "match": {"value": filename}}]}
             },
         )
         logger.info(f"Deleted vectors for {filename}")

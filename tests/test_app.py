@@ -47,13 +47,17 @@ class TestLoadExistingProgress:
         from src.app import _load_existing_progress
 
         output_file = tmp_path / "epstein_urls.json"
-        output_file.write_text(json.dumps({
-            "total_files": 2,
-            "files": [
-                {"url": "https://example.com/1.pdf", "filename": "1.pdf"},
-                {"url": "https://example.com/2.pdf", "filename": "2.pdf"},
-            ]
-        }))
+        output_file.write_text(
+            json.dumps(
+                {
+                    "total_files": 2,
+                    "files": [
+                        {"url": "https://example.com/1.pdf", "filename": "1.pdf"},
+                        {"url": "https://example.com/2.pdf", "filename": "2.pdf"},
+                    ],
+                }
+            )
+        )
 
         with patch("src.app.paths") as mock_paths:
             mock_paths.output_json = output_file
@@ -184,8 +188,13 @@ class TestProcessDataset:
             ]
             with patch("src.app._save_json"):
                 _process_dataset(
-                    mock_page, "https://example.com/dataset", 0, 1,
-                    all_pdfs, existing_urls, save_progress
+                    mock_page,
+                    "https://example.com/dataset",
+                    0,
+                    1,
+                    all_pdfs,
+                    existing_urls,
+                    save_progress,
                 )
 
         # Only new.pdf should be added
@@ -205,7 +214,9 @@ class TestRunScanMode:
             mock_context = MagicMock()
             mock_page = MagicMock()
 
-            mock_pw.return_value.__enter__.return_value.chromium.launch.return_value = mock_browser
+            mock_pw.return_value.__enter__.return_value.chromium.launch.return_value = (
+                mock_browser
+            )
             mock_browser.new_context.return_value = mock_context
             mock_context.new_page.return_value = mock_page
 
@@ -219,4 +230,3 @@ class TestRunScanMode:
 
             # Should return empty list on failure
             assert result == []
-

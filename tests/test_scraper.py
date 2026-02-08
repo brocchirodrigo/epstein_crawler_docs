@@ -63,11 +63,11 @@ class TestCheckResultsLoaded:
         from src.scraper import _check_results_loaded
 
         # Must have div#results containing PDF links
-        content = '''
+        content = """
         <div id="results">
             <a href="/files/doc.pdf">Document</a>
         </div>
-        '''
+        """
         assert _check_results_loaded(content) is True
 
     def test_detects_no_results(self):
@@ -226,9 +226,12 @@ class TestCollectPdfsForLetter:
 
         with patch("src.scraper.search_letter", return_value=True):
             with patch("src.scraper.get_total_pages", return_value=1):
-                with patch("src.scraper.extract_pdfs_from_page", return_value=[
-                    {"url": "https://example.com/doc.pdf", "filename": "doc.pdf"}
-                ]):
+                with patch(
+                    "src.scraper.extract_pdfs_from_page",
+                    return_value=[
+                        {"url": "https://example.com/doc.pdf", "filename": "doc.pdf"}
+                    ],
+                ):
                     result = collect_pdfs_for_letter(mock_page, "A", max_pages=1)
 
         assert len(result) >= 0
@@ -251,7 +254,7 @@ class TestCollectPdfsFromDataset:
             result = collect_pdfs_from_dataset(
                 mock_page,
                 "https://example.com/dataset",
-                on_page_complete=progress_callback
+                on_page_complete=progress_callback,
             )
 
         # Callback should be called at least once
@@ -270,4 +273,3 @@ class TestCollectPdfsFromDataset:
 
         # Should return empty when no PDFs found
         assert result == []
-
