@@ -1,6 +1,6 @@
 [project]
 name = "epstein-crawler-docs"
-version = "1.0.6"
+version = "1.0.7"
 description = "A specialized web scraper for the U.S. Department of Justice Epstein Files library, featuring advanced bot detection evasion, Xvfb support for headless environments, and automated PDF collection."
 readme = "README.md"
 requires-python = ">=3.14"

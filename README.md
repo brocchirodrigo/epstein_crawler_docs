@@ -269,6 +269,35 @@ OPENAI_CHAT_MODEL=gpt-4o-mini
 - `fastapi` - Web framework
 - `uvicorn` - ASGI server
 
+## 🛠️ Development & Testing
+
+### Running Tests
+To execute the test suite:
+```bash
+uv run pytest tests/ -v
+```
+
+### Linting & Formatting
+We use `ruff` to maintain code quality:
+```bash
+# Check for errors
+uv run ruff check .
+
+# Auto-fix simple errors
+uv run ruff check . --fix
+
+# Format code
+uv run ruff format .
+```
+
+### 🛡️ Resilience & Recovery
+The scraper is built to be robust against failures:
+
+1.  **Stop & Resume:** You can stop the script (`Ctrl+C`) at any time. Run it again, and it will pick up **exactly where it left off**.
+2.  **Incremental Downloads:** It checks `downloaded_urls` (success list) and `failed_urls` (error list) on startup to avoid re-downloading existing files or retrying known broken links.
+3.  **Atomic Saves:** Progress is saved to a temporary file first (`.tmp`) and then renamed. This prevents JSON corruption if a crash occurs during a write operation.
+4.  **Batch Processing:** Downloads happen in batches. If one file fails (e.g., 404), it's logged, and the batch continues without crashing the entire process.
+
 ## 📦 Release
 
 Images are automatically built and published to **Docker Hub** (`rodrigobrocchi/epstein_crawler_docs`) when a new tag is pushed.
