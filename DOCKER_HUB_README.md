@@ -123,6 +123,10 @@ docker compose --profile api down -v
 | `QDRANT_HOST` | `qdrant` | Hostname of Qdrant service |
 | `MAX_DOWNLOADS` | (unlimited) | Limit scraper downloads |
 
+## Legal Notice
+
+[Legal Notice](https://github.com/brocchirodrigo/epstein_crawler_docs/blob/main/LEGAL_NOTICE)
+
 ## 📜 License
 
 MIT License. For educational and research purposes only.
