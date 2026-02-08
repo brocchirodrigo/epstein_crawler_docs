@@ -12,3 +12,4 @@ wheels/
 downloads
 logs
 .env
+.DS_Store
