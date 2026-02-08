@@ -1,67 +1,127 @@
-# Epstein Files Scraper (Docker Edition)
+# Epstein Files Scraper & RAG API (Docker Edition)
 
-A specialized web scraper for the U.S. Department of Justice Epstein Files library (`https://www.justice.gov/epstein`). This image comes pre-configured with **Playwright**, **stealth patches**, and **Xvfb**, allowing it to bypass sophisticated bot detection and run in headless environments (like servers) where standard headless browsers fail.
+A specialized toolset for analyzing the U.S. Department of Justice Epstein Files. Includes an automated scraper and a RAG (Retrieval-Augmented Generation) API powered by OpenAI/Ollama and Qdrant.
 
 ## 🚀 Key Features
 
--   **Anti-Detection**: Built-in stealth patches to bypass bot protections.
--   **Headless Bypass (Xvfb)**: Runs a virtual display server (Xvfb) inside the container. This tricks the site into thinking it's running on a real desktop, bypassing strict "headless browser" blocks.
--   **Automated Workflow**: Handles age verification ("I am 18+"), pagination, alphabet-based search, and PDF downloading.
--   **Smart Logic**: Deduplicates files and logs errors efficiently.
+- **🛡️ Scraper**: Automated PDF download from DOJ, bypassing age verification and bot detection.
+- **🧠 RAG API**: Ask questions about the documents using natural language.
+- **👁️ Vision**: Uses GPT-4o-mini (or compatible models) to read text and understand images in PDFs.
+- **⚡ Vector Search**: Powered by Qdrant.
+- **🔄 Background Sync**: Automatically indexes PDFs as they are downloaded.
 
-## 🐳 Usage
+## ⚙️ Standard Workflow
 
-### Quick Start (Docker Run)
+1.  **Scrape**: Run the `scraper-scan` service to download PDFs from the DOJ website into the `./downloads` folder.
+2.  **Index**: Start the `api` service. It detects new PDFs in `./downloads`, reads them with Vision AI, and stores embeddings in Qdrant.
+3.  **Query**: Use the `/ask` endpoint to query the documents.
 
-Run the scraper and mount a local directory to save the downloaded PDFs:
+## 🐳 Usage (Docker Compose)
 
-```bash
-docker run --rm -it \
-  -v $(pwd)/downloads:/app/downloads \
-  -v $(pwd)/logs:/app/logs \
-  rodrigobrocchi/epstein_crawler_docs:latest
-```
+The recommended way to run is via Docker Compose, using **profiles** to select the desired service.
 
-### Using Docker Compose (Recommended)
-
-Create a `docker-compose.yml`:
+### `docker-compose.yml` Example
 
 ```yaml
-version: '3.8'
-
 services:
-  scraper:
+  # 1. Scraper Service (Optional)
+  scraper-scan:
     image: rodrigobrocchi/epstein_crawler_docs:latest
-    container_name: epstein_scraper
+    container_name: epstein_scraper_scan
     volumes:
-      - ./downloads:/app/downloads  # Where PDFs will be saved
-      - ./logs:/app/logs            # Where logs will be saved
+      - ./downloads:/app/downloads      # Persist PDFs
+      - ./logs:/app/logs
+    shm_size: 2gb
+    restart: "no"
+    user: root
+    profiles: ["scraper"]
+
+  # 2. Vector DB (Required for API)
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: epstein_qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage     # Persist Vectors
+    restart: unless-stopped
+    profiles: ["api"]
+
+  # 3. RAG API Service
+  api:
+    image: rodrigobrocchi/epstein_crawler_docs:latest
+    container_name: epstein_api
+    command: ["api"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./downloads:/app/downloads      # Read PDFs
     environment:
-      - ALPHABET=abc                # Optional: Letters to search (default: a-z)
-      - MAX_PAGES_PER_LETTER=2      # Optional: Limit pages per letter
-      # - MAX_DOWNLOADS=10          # Optional: Limit total downloads
-    shm_size: 2gb                   # Important for browser stability
+      - OPENAI_API_KEY=sk-your-key-here
+      - OPENAI_VISION_MODEL=gpt-4o-mini
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+    shm_size: 4gb
+    depends_on:
+      - qdrant
+    profiles: ["api"]
+
+volumes:
+  qdrant_data:
 ```
 
-Then run:
+### 📥 1. Run Scraper (Download PDFs)
+
+Downloads PDFs from the DOJ website to the `./downloads` folder.
 
 ```bash
-docker-compose up
+docker compose --profile scraper up
+```
+
+### 🧠 2. Start RAG API + Qdrant
+
+Starts the API and the Vector Database. It will automatically scan and index any PDFs found in `./downloads`.
+
+```bash
+docker compose --profile api up
+```
+
+- **API URL**: `http://localhost:8000`
+- **Docs**: `http://localhost:8000/docs`
+
+### 🌐 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check (includes sync status) |
+| `GET` | `/stats` | Index statistics |
+| `POST` | `/sync` | Trigger background sync |
+| `GET` | `/sync/status` | Check sync progress |
+| `POST` | `/ask` | Ask a question |
+
+### 🧹 Cleaning Up
+
+To stop services and **remove Qdrant data**:
+
+```bash
+# Stop services
+docker compose --profile api down
+
+# Stop AND remove volumes (resets database)
+docker compose --profile api down -v
 ```
 
 ## ⚙️ Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ALPHABET` | `abcdefghijklmnopqrstuvwxyz` | Letters to search. Set to `a` or `abc` for partial scrapes. |
-| `MAX_PAGES_PER_LETTER` | `None` (Unlimited) | Crawl only N pages per letter. Good for testing. |
-| `MAX_DOWNLOADS` | `None` (Unlimited) | Stop after downloading N files. |
-| `NAVIGATION_TIMEOUT` | `60000` | Timeout in ms for page loads. |
-
-## ⚠️ Notes
-
--   **Headless Mode**: The container runs Xvfb by default. You do **not** need to set any headless flags. The application is hardcoded to run in GUI mode (which Xvfb simulates) to bypass detection.
--   **Memory**: It is recommended to set `shm_size: 2gb` to prevent Chromum from crashing on large pages.
+| `OPENAI_API_KEY` | (required) | OpenAI API key (or "ollama" for local) |
+| `OPENAI_BASE_URL` | (none) | Custom API URL (e.g. for Ollama / Azure) |
+| `OPENAI_EMBEDDING_DIMENSION` | `1536` | Dimension of the embedding model |
+| `OPENAI_CHAT_MODEL` | `gpt-5-mini` | Chat model for Q&A |
+| `OPENAI_VISION_MODEL` | `gpt-4o-mini` | Vision model for PDF parsing |
+| `QDRANT_HOST` | `qdrant` | Hostname of Qdrant service |
+| `MAX_DOWNLOADS` | (unlimited) | Limit scraper downloads |
 
 ## 📜 License
 
