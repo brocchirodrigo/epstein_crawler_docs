@@ -42,7 +42,7 @@ eua_gov/
 ## Installation
 
 ```bash
-cd eua_gov
+cd epstein_crawler_docs
 
 # Install dependencies
 uv sync
