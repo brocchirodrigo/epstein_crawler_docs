@@ -13,3 +13,5 @@ downloads
 logs
 .env
 .DS_Store
+epstein_urls.json
+downloaded.txt
