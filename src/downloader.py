@@ -72,15 +72,15 @@ def download_all_pdfs(
     downloaded = 0
     failed = []
 
-    logger.info(f"\n{'='*60}")
+    logger.info(f"\n{'=' * 60}")
     logger.info(f"⬇️ DOWNLOADING {total} FILES")
-    logger.info(f"{'='*60}")
+    logger.info(f"{'=' * 60}")
 
     for i, file_info in enumerate(files):
         url = file_info["url"]
         filename = file_info["filename"]
 
-        logger.info(f"[{i+1}/{total}] {filename}")
+        logger.info(f"[{i + 1}/{total}] {filename}")
 
         if download_pdf(context, url, filename):
             downloaded += 1

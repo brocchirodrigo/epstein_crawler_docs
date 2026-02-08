@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 HTML_PARSER = "html.parser"
 NO_RESULTS_TEXT = "No results found"
 
+
 class ScraperSettings(BaseSettings):
     """Main configuration for the Epstein Files Scraper."""
 

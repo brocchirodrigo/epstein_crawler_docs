@@ -77,9 +77,9 @@ def _collect_links(page, letters: list, max_pages: int) -> list:
     all_pdfs = []
 
     for i, letter in enumerate(letters):
-        logger.info(f"\n{'='*40}")
-        logger.info(f"LETTER {letter.upper()} ({i+1}/{len(letters)})")
-        logger.info(f"{'='*40}")
+        logger.info(f"\n{'=' * 40}")
+        logger.info(f"LETTER {letter.upper()} ({i + 1}/{len(letters)})")
+        logger.info(f"{'=' * 40}")
 
         try:
             logger.info(f"🌐 Accessing {settings.epstein_page}...")

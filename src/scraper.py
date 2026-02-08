@@ -123,7 +123,9 @@ def _check_results_loaded(content: str) -> bool:
     """Check if results are present in the page content."""
     soup = BeautifulSoup(content, HTML_PARSER)
     results_div = soup.find("div", id="results")
-    if results_div and results_div.find_all("a", href=lambda x: x and ".pdf" in str(x).lower()):
+    if results_div and results_div.find_all(
+        "a", href=lambda x: x and ".pdf" in str(x).lower()
+    ):
         return True
     return False
 
@@ -200,22 +202,24 @@ def get_total_pages(page: Page, max_pages: int = None) -> int:
     Returns min(total_pages, max_pages) if max_pages is specified.
     """
     content = page.content()
-    
+
     match = re.search(r"Showing \d+ to \d+ of ([\d,]+) Results", content)
 
     if not match:
         soup = BeautifulSoup(content, HTML_PARSER)
         results_div = soup.find("div", id="results")
         if results_div:
-            links = results_div.find_all("a", href=lambda x: x and ".pdf" in str(x).lower())
+            links = results_div.find_all(
+                "a", href=lambda x: x and ".pdf" in str(x).lower()
+            )
             if links:
                 logger.info(f"📊 Found {len(links)} PDFs on page (no pagination label)")
                 return max_pages if max_pages else 1
-        
+
         if NO_RESULTS_TEXT in content:
             logger.warning("No results found for this search")
             return 0
-            
+
         logger.warning("Could not find pagination label, assuming 1 page")
         return 1
 
@@ -306,7 +310,9 @@ def navigate_to_page(page: Page, target_page: int) -> bool:
 
         soup = BeautifulSoup(content, HTML_PARSER)
         results_div = soup.find("div", id="results")
-        if not results_div or not results_div.find_all("a", href=lambda x: x and ".pdf" in str(x).lower()):
+        if not results_div or not results_div.find_all(
+            "a", href=lambda x: x and ".pdf" in str(x).lower()
+        ):
             logger.warning(f"  Page {target_page} has no PDFs")
             return False
 
@@ -334,7 +340,9 @@ def collect_pdfs_for_letter(page: Page, letter: str, max_pages: int = None) -> l
     logger.info(f"  📄 Page 1/{total_pages} - Extracting links...")
     pdfs = extract_pdfs_from_page(page)
     all_pdfs.extend(pdfs)
-    logger.info(f"  ✅ Page 1/{total_pages} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})")
+    logger.info(
+        f"  ✅ Page 1/{total_pages} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})"
+    )
 
     for page_num in range(2, total_pages + 1):
         logger.info(f"  ➡️ Navigating to page {page_num}...")
@@ -351,6 +359,8 @@ def collect_pdfs_for_letter(page: Page, letter: str, max_pages: int = None) -> l
             break
 
         all_pdfs.extend(pdfs)
-        logger.info(f"  ✅ Page {page_num}/{total_pages} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})")
+        logger.info(
+            f"  ✅ Page {page_num}/{total_pages} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})"
+        )
 
     return all_pdfs
