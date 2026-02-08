@@ -65,11 +65,11 @@ def mark_as_failed(url: str) -> None:
 
 
 def download_pdf(context: BrowserContext, url: str, filename: str,
-                 downloaded_urls: set = None, failed_urls: set = None) -> bool:
+                 downloaded_urls: set = None, failed_urls: set = None) -> str | None:
     """
     Downloads a single PDF using the Playwright context session.
     Validates response is actually a PDF before saving.
-    Returns True if download was successful or should be skipped.
+    Returns: 'downloaded' if new download, 'skipped' if already exists/failed, None if error.
     """
     ensure_downloads_dir()
 
@@ -79,14 +79,14 @@ def download_pdf(context: BrowserContext, url: str, filename: str,
     filepath = paths.downloads_dir / filename
 
     if downloaded_urls and url in downloaded_urls:
-        return True
+        return "skipped"
 
     if failed_urls and url in failed_urls:
-        return True
+        return "skipped"
 
     if filepath.exists():
         mark_as_downloaded(url)
-        return True
+        return "skipped"
 
     try:
         response = context.request.get(url)
@@ -96,17 +96,17 @@ def download_pdf(context: BrowserContext, url: str, filename: str,
             mark_as_failed(url)
             if failed_urls is not None:
                 failed_urls.add(url)
-            return True
+            return "skipped"
 
         if response.status != 200:
             logger.error(f"HTTP {response.status} for {filename}")
-            return False
+            return None
 
         body = response.body()
 
         if body[:4] != b"%PDF":
             logger.error(f"Response is not a PDF for {filename}")
-            return False
+            return None
 
         with open(filepath, "wb") as f:
             f.write(body)
@@ -114,20 +114,22 @@ def download_pdf(context: BrowserContext, url: str, filename: str,
         size_kb = len(body) / 1024
         logger.info(f"  ✅ {filename} ({size_kb:.1f} KB)")
         mark_as_downloaded(url)
-        return True
+        return "downloaded"
 
     except Exception as e:
         logger.error(f"Failed to download {filename}: {e}")
-        return False
+        return None
 
 
-def download_batch(context: BrowserContext, files: list, downloaded_urls: set) -> int:
+def download_batch(context: BrowserContext, files: list, downloaded_urls: set,
+                   failed_urls: set = None) -> int:
     """
     Download a batch of PDFs incrementally.
     Skips files already in downloaded_urls or failed_urls.
-    Returns number of files downloaded.
+    Returns number of NEW files downloaded (not skips).
     """
-    failed_urls = load_failed_urls()
+    if failed_urls is None:
+        failed_urls = load_failed_urls()
     to_download = [f for f in files
                    if f["url"] not in downloaded_urls
                    and f["url"] not in failed_urls]
@@ -139,7 +141,8 @@ def download_batch(context: BrowserContext, files: list, downloaded_urls: set) -
         url = file_info["url"]
         filename = file_info["filename"]
 
-        if download_pdf(context, url, filename, downloaded_urls, failed_urls):
+        result = download_pdf(context, url, filename, downloaded_urls, failed_urls)
+        if result == "downloaded":
             downloaded_urls.add(url)
             count += 1
 
@@ -159,11 +162,14 @@ def download_all_pdfs(
     """
     ensure_downloads_dir()
     downloaded_urls = load_downloaded_urls()
+    failed_urls = load_failed_urls()
 
     if max_downloads:
         files = files[:max_downloads]
 
-    files_to_download = [f for f in files if f["url"] not in downloaded_urls]
+    files_to_download = [f for f in files
+                         if f["url"] not in downloaded_urls
+                         and f["url"] not in failed_urls]
     skipped = len(files) - len(files_to_download)
 
     total = len(files_to_download)
@@ -180,10 +186,11 @@ def download_all_pdfs(
 
         logger.info(f"[{i + 1}/{total}] {filename}")
 
-        if download_pdf(context, url, filename, downloaded_urls):
+        result = download_pdf(context, url, filename, downloaded_urls, failed_urls)
+        if result == "downloaded":
             downloaded += 1
             downloaded_urls.add(url)
-        else:
+        elif result is None:
             failed.append(filename)
 
     return downloaded + skipped, failed

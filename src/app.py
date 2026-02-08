@@ -16,7 +16,7 @@ from .scraper import (
     get_dataset_links,
     collect_pdfs_from_dataset,
 )
-from .downloader import download_all_pdfs, download_batch, load_downloaded_urls
+from .downloader import download_all_pdfs, download_batch, load_downloaded_urls, load_failed_urls
 
 
 def run_scraper(
@@ -53,6 +53,7 @@ def run_scraper(
     logger.info("=" * 60)
 
     all_pdfs = []
+    unique_pdfs = []
 
     with sync_playwright() as p:
         browser, context, page = create_browser_context(p)
@@ -119,7 +120,7 @@ def _deduplicate(all_pdfs: list) -> list:
 
 
 def _save_json(unique_pdfs: list, letters: list, max_pages: int) -> None:
-    """Save results to JSON file."""
+    """Save results to JSON file atomically."""
     result = {
         "total_files": len(unique_pdfs),
         "letters_searched": letters,
@@ -127,8 +128,16 @@ def _save_json(unique_pdfs: list, letters: list, max_pages: int) -> None:
         "files": unique_pdfs,
     }
 
-    with open(paths.output_json, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    temp_file = paths.output_json.with_suffix(".tmp")
+    try:
+        with open(temp_file, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+        temp_file.replace(paths.output_json)
+    except Exception as e:
+        logger.error(f"Failed to save JSON: {e}")
+        if temp_file.exists():
+            temp_file.unlink()
+        raise
 
     logger.info(f"💾 JSON saved: {paths.output_json}")
 
@@ -160,11 +169,6 @@ def _load_existing_progress() -> tuple[list, set]:
     """Load existing progress from JSON file if available, or create it."""
     all_pdfs = []
     existing_urls = set()
-
-    if paths.output_json.is_dir():
-        logger.warning("⚠️ epstein_urls.json is a directory (Docker mount issue)")
-        logger.warning("⚠️ Please run: rm -rf epstein_urls.json && touch epstein_urls.json")
-        return all_pdfs, existing_urls
 
     if paths.output_json.exists():
         try:
@@ -218,7 +222,7 @@ def _navigate_to_disclosures(page) -> bool:
     return expand_transparency_accordion(page)
 
 
-def _process_all_datasets(page, context, all_pdfs, existing_urls, downloaded_urls, save_progress, skip_download):
+def _process_all_datasets(page, all_pdfs, existing_urls, save_progress):
     """Process all datasets with incremental downloads."""
     dataset_links = get_dataset_links(page)
     unique_pdfs = []
@@ -228,9 +232,6 @@ def _process_all_datasets(page, context, all_pdfs, existing_urls, downloaded_url
             page, link, i, len(dataset_links),
             all_pdfs, existing_urls, save_progress
         )
-
-        if not skip_download:
-            download_batch(context, unique_pdfs, downloaded_urls)
 
     return unique_pdfs
 
@@ -245,29 +246,23 @@ def _emergency_save(all_pdfs):
     return []
 
 
-def run_scan_mode(
-    max_downloads: int = None,
-    skip_download: bool = False,
-) -> list:
+def run_scan_mode(skip_download: bool = False) -> list:
     """
     Orchestrator for the new 'Scan Mode' (DOJ Disclosures).
     Navigates to the page, expands the accordion, and collects PDFs from datasets.
     Saves progress incrementally and resumes from existing JSON if available.
     Downloads happen after each page during scraping.
     """
-    if max_downloads is None:
-        max_downloads = settings.max_downloads
-
     logger.info("=" * 60)
     logger.info("🕵️‍♂️ EPSTEIN FILES SCRAPER - SCAN MODE")
     logger.info("=" * 60)
     logger.info(f"Target: {settings.disclosures_path}")
-    logger.info(f"Max downloads: {max_downloads or 'unlimited'}")
     logger.info("=" * 60)
 
     all_pdfs, existing_urls = _load_existing_progress()
     unique_pdfs = []
     downloaded_urls = load_downloaded_urls()
+    failed_urls = load_failed_urls()
     context_holder = [None]
 
     def save_progress(dataset_pdfs: list):
@@ -280,7 +275,7 @@ def run_scan_mode(
         logger.info(f"💾 Auto-save: {len(unique_pdfs)} unique PDFs")
 
         if not skip_download and context_holder[0]:
-            download_batch(context_holder[0], unique_pdfs, downloaded_urls)
+            download_batch(context_holder[0], unique_pdfs, downloaded_urls, failed_urls)
 
     with sync_playwright() as p:
         browser, context, page = create_browser_context(p)
@@ -289,8 +284,7 @@ def run_scan_mode(
         try:
             if _navigate_to_disclosures(page):
                 unique_pdfs = _process_all_datasets(
-                    page, context, all_pdfs, existing_urls,
-                    downloaded_urls, save_progress, skip_download
+                    page, all_pdfs, existing_urls, save_progress
                 )
 
         except Exception as e:
