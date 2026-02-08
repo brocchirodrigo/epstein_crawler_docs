@@ -8,9 +8,10 @@ services:
       - ./downloads:/app/downloads
       - ./logs:/app/logs
       - ./epstein_urls.json:/app/epstein_urls.json
-
     shm_size: 2gb
     restart: "no"
+    user: root
+    profiles: ["scraper"]
 
   scraper-search:
     build:
@@ -25,4 +26,48 @@ services:
 
     shm_size: 2gb
     restart: "no"
-    profiles: ["search", "all"]
+    user: root
+    profiles: ["search"]
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: epstein_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    profiles: ["api"]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: epstein_api
+    command: ["api"]
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./downloads:/app/downloads
+    environment:
+      - OPENAI_API_KEY
+      - OPENAI_BASE_URL
+      - OPENAI_EMBEDDING_MODEL
+      - OPENAI_EMBEDDING_DIMENSION
+      - OPENAI_CHAT_MODEL
+      - OPENAI_VISION_MODEL
+      - MAX_PAGES_PER_PDF
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+    shm_size: 4gb
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+    depends_on:
+      - qdrant
+    profiles: ["api"]
+
+volumes:
+  qdrant_data:
