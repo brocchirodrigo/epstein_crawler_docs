@@ -4,6 +4,7 @@ Handles browser automation, gate passing, and PDF link collection.
 """
 
 import time
+from pathlib import Path
 import re
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
@@ -361,5 +362,102 @@ def collect_pdfs_for_letter(page: Page, letter: str, max_pages: int = None) -> l
         logger.info(
             f"  ✅ Page {page_num}/{total_pages} - Found {len(pdfs)} PDFs (total: {len(all_pdfs)})"
         )
+
+    return all_pdfs
+
+
+def expand_transparency_accordion(page: Page) -> bool:
+    """
+    Locates and clicks the 'Epstein Files Transparency Act' accordion.
+    Returns True if successful.
+    """
+    logger.info("📂 Expanding 'Epstein Files Transparency Act' menu...")
+    try:
+        time.sleep(2)
+
+        clicked = page.evaluate("""() => {
+            const buttons = Array.from(document.querySelectorAll('.usa-accordion__button'));
+            const target = buttons.find(b => b.textContent.includes('Epstein Files Transparency Act'));
+            if (target) {
+                target.click();
+                return true;
+            }
+            return false;
+        }""")
+
+        if clicked:
+            logger.info("  ✅ Accordion clicked")
+            time.sleep(2)
+            return True
+        else:
+            logger.error("  ❌ Accordion button not found")
+            return False
+
+    except Exception as e:
+        logger.error(f"Failed to expand accordion: {e}")
+        return False
+
+
+def get_dataset_links(page: Page) -> list[str]:
+    """
+    Extracts links to 'Data Set X Files' pages from the expanded accordion.
+    Returns a list of full URLs.
+    """
+    links = []
+    try:
+        content = page.content()
+        soup = BeautifulSoup(content, HTML_PARSER)
+
+        anchors = soup.find_all(
+            "a", href=lambda x: x and "/epstein/doj-disclosures/data-set-" in str(x)
+        )
+
+        for a in anchors:
+            href = a.get("href")
+            full_url = urljoin(settings.base_url, href)
+            links.append(full_url)
+
+        links = list(dict.fromkeys(links))
+        logger.info(f"🔢 Found {len(links)} dataset links")
+
+    except Exception as e:
+        logger.error(f"Failed to extract dataset links: {e}")
+
+    return links
+
+
+def collect_pdfs_from_dataset(page: Page, dataset_url: str) -> list[dict]:
+    """
+    Navigates to a dataset page, handles age gates, and extracts PDF links.
+    Returns list of PDF info dicts.
+    """
+    logger.info(f"📂 Processing dataset: {dataset_url}")
+    all_pdfs = []
+
+    try:
+        page.goto(dataset_url, wait_until="networkidle", timeout=settings.navigation_timeout)
+        pass_gates(page)
+
+        content = page.content()
+        soup = BeautifulSoup(content, HTML_PARSER)
+        pdf_links = soup.find_all("a", href=lambda x: x and str(x).lower().endswith(".pdf"))
+
+        for link in pdf_links:
+            href = link.get("href", "")
+            full_url = urljoin(settings.base_url, href)
+            filename = link.get_text(strip=True) or Path(href).name
+
+            dataset_name = dataset_url.split("/")[-1].replace("-", " ").title()
+
+            all_pdfs.append({
+                "url": full_url,
+                "filename": filename,
+                "dataset": dataset_name
+            })
+
+        logger.info(f"  ✅ Found {len(all_pdfs)} PDFs in dataset")
+
+    except Exception as e:
+        logger.error(f"Failed to process dataset {dataset_url}: {e}")
 
     return all_pdfs

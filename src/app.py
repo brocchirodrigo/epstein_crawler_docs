@@ -12,6 +12,9 @@ from .scraper import (
     create_browser_context,
     pass_gates,
     collect_pdfs_for_letter,
+    expand_transparency_accordion,
+    get_dataset_links,
+    collect_pdfs_from_dataset,
 )
 from .downloader import download_all_pdfs
 
@@ -151,3 +154,60 @@ def _download_files(context, unique_pdfs: list, max_downloads: int) -> None:
         logger.warning("Failed files:")
         for f in failed:
             logger.warning(f"  - {f}")
+
+
+def run_scan_mode(
+    max_downloads: int = None,
+    skip_download: bool = False,
+) -> list:
+    """
+    Orchestrator for the new 'Scan Mode' (DOJ Disclosures).
+    Navigates to the page, expands the accordion, and collects PDFs from datasets.
+    """
+    if max_downloads is None:
+        max_downloads = settings.max_downloads
+
+    logger.info("=" * 60)
+    logger.info("🕵️‍♂️ EPSTEIN FILES SCRAPER - SCAN MODE")
+    logger.info("=" * 60)
+    logger.info(f"Target: {settings.disclosures_path}")
+    logger.info(f"Max downloads: {max_downloads or 'unlimited'}")
+    logger.info("=" * 60)
+
+    unique_pdfs = []
+
+    with sync_playwright() as p:
+        browser, context, page = create_browser_context(p)
+
+        try:
+            logger.info(f"🌐 Accessing {settings.base_url}{settings.disclosures_path}...")
+            page.goto(
+                f"{settings.base_url}{settings.disclosures_path}",
+                wait_until="networkidle",
+                timeout=settings.navigation_timeout,
+            )
+
+            pass_gates(page)
+
+            if expand_transparency_accordion(page):
+                dataset_links = get_dataset_links(page)
+                
+                all_pdfs = []
+                for link in dataset_links:
+                    pdfs = collect_pdfs_from_dataset(page, link)
+                    all_pdfs.extend(pdfs)
+                
+                unique_pdfs = _deduplicate(all_pdfs)
+
+                _save_json(unique_pdfs, ["SCAN_MODE"], 0)
+
+                if not skip_download and unique_pdfs:
+                    _download_files(context, unique_pdfs, max_downloads)
+
+        except Exception as e:
+            logger.error(f"Scan mode failed: {e}")
+
+        finally:
+            browser.close()
+
+    return unique_pdfs

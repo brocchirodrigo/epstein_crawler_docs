@@ -4,12 +4,12 @@ A Python-based web scraper that downloads PDF documents from the U.S. Department
 
 ## Features
 
-- **Automated Browser Control**: Uses Playwright to bypass bot detection and age verification
-- **Alphabet-Based Search**: Searches through documents using letter-based queries
-- **Pagination Handling**: Automatically navigates through multiple result pages
-- **Deduplication**: Removes duplicate files before downloading
-- **Session-Based Downloads**: Uses authenticated browser session for PDF downloads
-- **Error Logging**: Saves errors to log files for debugging
+- **Automated Browser Control**: Uses Playwright to bypass bot detection and age verification.
+- **DOJ Disclosures Scan (Default)**: Automatically navigates the disclosures page, expands the transparency act menu, and downloads datasets.
+- **Legacy Alphabet Search**: Optional mode to search through documents using letter-based queries.
+- **Deduplication**: Removes duplicate files before downloading.
+- **Session-Based Downloads**: Uses authenticated browser session for PDF downloads.
+- **Error Logging**: Saves errors to log files for debugging.
 
 ## Project Structure
 
@@ -51,87 +51,98 @@ uv sync
 uv run playwright install chromium
 ```
 
-## Environment Variables
+## Configuration
 
-Create a `.env` file in the project root:
+You can configure the scraper using environment variables. These are optional as sensible defaults are provided.
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `ALPHABET` | string | `abcdefghijklmnopqrstuvwxyz` | Letters to search (e.g., `abc` for only A, B, C) |
-| `MAX_PAGES_PER_LETTER` | int | `None` (unlimited) | Max result pages per letter |
 | `MAX_DOWNLOADS` | int | `None` (unlimited) | Max files to download |
 | `BASE_URL` | string | `https://www.justice.gov` | Base URL for scraping |
 | `NAVIGATION_TIMEOUT` | int | `60000` | Navigation timeout in ms |
 | `VIEWPORT_WIDTH` | int | `1920` | Browser viewport width |
 | `VIEWPORT_HEIGHT` | int | `1080` | Browser viewport height |
+| `ALPHABET` | string | `abcdefghijklmnopqrstuvwxyz` | Letters to search (Legacy Mode only) |
+| `MAX_PAGES_PER_LETTER` | int | `None` (unlimited) | Max result pages per letter (Legacy Mode only) |
 
 > **Note**: The browser always runs in GUI mode (headless=false) because the site blocks headless browsers.
 
 ### Example `.env` for testing
 
 ```env
-ALPHABET=abc
-MAX_PAGES_PER_LETTER=2
 MAX_DOWNLOADS=10
-```
-
-### Example `.env` for full scrape
-
-```env
-# Leave empty for unlimited - all letters, all pages, all downloads
 ```
 
 ## Usage
 
-### Local Execution
+### 🚀 Default: Scan Mode (DOJ Disclosures)
+This is the new default method. It navigates to the DOJ Disclosures page, handles the "Epstein Files Transparency Act" menu, and downloads all datasets.
 
+**Local:**
 ```bash
 uv run main.py
 ```
 
-### 🐳 Running with Docker Compose (Recommended)
+**Docker Compose:**
+```bash
+# Builds and runs the default 'scraper-scan' service
+docker compose up --build
+```
 
-This method handles all dependencies, including the browser and virtual display (Xvfb), automatically.
+### 🔍 Legacy: Search Mode
+This method iterates through letters of the alphabet to find documents (old behavior).
 
-1. **Build and Start**:
+**Local:**
+```bash
+# Example: Search only letters A, B, and C
+ALPHABET=abc uv run main.py --search
+```
 
+**Docker Compose:**
+```bash
+# Runs the 'scraper-search' service (one-off container)
+docker compose run --rm scraper-search
+
+# OR with custom environment variables
+docker compose run -e ALPHABET=abc --rm scraper-search
+```
+
+## Docker Instructions
+
+### Detailed Usage
+
+1.  **Run Scan Mode (Default)**:
     ```bash
-    docker compose up --build
+    docker compose up
     ```
 
-2. **Run in Background (Detached)**:
-
+2.  **Run Legacy Search Mode**:
     ```bash
-    docker compose up -d
+    docker compose run --rm scraper-search
     ```
 
-3. **View Logs**:
-
+3.  **Run Both Modes**:
     ```bash
-    docker compose logs -f
+    # '--profile all' enables the search service, and 'up' starts default + enabled
+    docker compose --profile all up
     ```
 
-4. **Stop**:
-
+4.  **Stop & Clean**:
     ```bash
     docker compose down
     ```
 
-## Output
+### Output Directory
+
+- **epstein_urls.json**: JSON file with all collected PDF URLs.
+- **downloads/**: Directory containing downloaded PDF files.
+- **logs/**: Log files.
 
 - **epstein_urls.json**: JSON file with all collected PDF URLs
 - **downloads/**: Directory containing downloaded PDF files
 - **logs/**: Log files
   - `scraper_YYYY-MM-DD.log` - Warnings and errors
   - `errors_YYYY-MM-DD.log` - Critical errors only
-
-## How It Works
-
-1. **Gate Passing**: Automatically clicks through robot verification and age confirmation
-2. **Search**: Searches for each letter in the document library
-3. **Collection**: Extracts PDF links from search results, navigating through pagination
-4. **Deduplication**: Removes duplicate URLs based on file URL
-5. **Download**: Downloads unique PDFs using the authenticated browser session
 
 ## Dependencies
 
@@ -144,13 +155,6 @@ This method handles all dependencies, including the browser and virtual display 
 ## 📦 Release
 
 Images are automatically built and published to **Docker Hub** (`rodrigobrocchi/epstein_crawler_docs`) when a new tag is pushed.
-
-### Prerequisites
-
-You must configure the following **Repository Secrets** in GitHub:
-
-- `DOCKERHUB_USERNAME`: Your Docker Hub username
-- `DOCKERHUB_TOKEN`: An Access Token from Docker Hub
 
 ### How to Release
 
