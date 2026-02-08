@@ -165,7 +165,6 @@ You must configure the following **Repository Secrets** in GitHub:
 
 3. The workflow will build and push:
     - `rodrigobrocchi/epstein_crawler_docs:latest`
-    - `rodrigobrocchi/epstein_crawler_docs:1.0.1`
 
 ## License
 
